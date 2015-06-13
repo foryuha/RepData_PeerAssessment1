@@ -8,17 +8,20 @@ keep_md: true
 ### **Loading and preprocessing the data**
 
 Load required libraries for this research
-```{r,message=FALSE,warning=FALSE}
+
+```r
 library(dplyr)
 library(lubridate)
 library(ggplot2)
 ```
 Load data from csv file
-```{r}
+
+```r
 act_data <- read.csv("activity.csv")
 ```
 Convert date factors to Date objects
-```{r}
+
+```r
 act_data$date <- ymd(act_data$date)
 ```
 
@@ -26,19 +29,23 @@ act_data$date <- ymd(act_data$date)
 ### **What is mean total number of steps taken per day?**
 
 Remove rows with NA values
-```{r}
+
+```r
 act_data_no_na <- act_data[complete.cases(act_data),]
 ```
 Group data by Date
-```{r}
+
+```r
 act_data_byDate <- group_by(act_data_no_na, date)
 ```
 Calculate total number of steps per day
-```{r}
+
+```r
 total_steps_per_day <- summarize(act_data_byDate, total_steps=sum(steps))
 ```
 Plot a histogram for the total number of steps taken per day
-```{r}
+
+```r
 hist(
     total_steps_per_day$total_steps,
     xlab = "Total Steps per Day",
@@ -46,23 +53,39 @@ hist(
   )
 ```
 
+![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7-1.png) 
+
 Calculate the mean and median of the total number of steps per day
-```{r,warning=FALSE}
+
+```r
 mean(total_steps_per_day$total_steps)
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 median(total_steps_per_day$total_steps)
+```
+
+```
+## [1] 10765
 ```
 
 
 ### **What is the average daily activity pattern?**
 
 Compute the mean for each 5-minute interval
-```{r}
+
+```r
 act_data_by5MinInterval <- group_by(act_data, interval)
 mean_per_5MinInterval <- summarize(act_data_by5MinInterval, mean_steps=round(mean(steps,na.rm = T))) 
 ```
 Make a time series plot of the 5-minute interval (x-axis)  
 and the average number of steps taken (y-axis)
-```{r}
+
+```r
 plot(
     x = mean_per_5MinInterval$interval,
     y = mean_per_5MinInterval$mean_steps,
@@ -73,27 +96,44 @@ plot(
   )
 ```
 
+![plot of chunk unnamed-chunk-10](figure/unnamed-chunk-10-1.png) 
+
 Find the 5-minute interval with the maximum number of steps
-```{r}
+
+```r
 max_steps = max(mean_per_5MinInterval$mean_steps)
 mean_per_5MinInterval[mean_per_5MinInterval$mean_steps == max_steps, "interval"]
+```
+
+```
+## Source: local data frame [1 x 1]
+## 
+##   interval
+## 1      835
 ```
 
 
 ### **Imputing missing values**
 
 Count the total number of rows with missing values in the dataset
-```{r}
+
+```r
 sum(!complete.cases(act_data))
+```
+
+```
+## [1] 2304
 ```
 Missing values is filled by using the mean of the respective 5-minute interval  
 First, the mean for each 5-minute interval is computed
-```{r}
+
+```r
 act_data_by5MinInterval <- group_by(act_data, interval)
 mean_per_5MinInterval <- summarize(act_data_by5MinInterval, mean_steps=round(mean(steps,na.rm = T)))
 ```
 Then, a new dataset is created by filling the NA values in the original dataset
-```{r}
+
+```r
 new_act_data = act_data
 for (row_index in which(!complete.cases(act_data))) {
   interval_mean_index <- mean_per_5MinInterval$interval == new_act_data[row_index,"interval"]
@@ -102,7 +142,8 @@ for (row_index in which(!complete.cases(act_data))) {
 ```
 Plot a histogram for the total number of steps taken per day  
 using the new dataset
-```{r}
+
+```r
 act_data_byDate <- group_by(new_act_data, date)
 total_steps_per_day <- summarize(act_data_byDate, total_steps=sum(steps))
 hist(
@@ -112,11 +153,25 @@ hist(
   )
 ```
 
+![plot of chunk unnamed-chunk-15](figure/unnamed-chunk-15-1.png) 
+
 Calculate the mean and median of the total number of steps per day  
 using the new dataset
-```{r,warning=FALSE}
+
+```r
 mean(total_steps_per_day$total_steps)
+```
+
+```
+## [1] 10765.64
+```
+
+```r
 median(total_steps_per_day$total_steps)
+```
+
+```
+## [1] 10762
 ```
 
 
@@ -125,7 +180,8 @@ median(total_steps_per_day$total_steps)
 Create a new factor column to indicate "weekday" or "weekend"  
 Monday to Friday are treated as "weekday"  
 Saturday and Sunday are treated as "weekend"  
-```{r}
+
+```r
 dayType = factor(c("weekday","weekend"))
 getDayType = function(date) {
   daynum = as.POSIXlt(date)$wday
@@ -140,14 +196,16 @@ data_with_dayType = mutate(new_act_data, dayType = sapply(date, getDayType))
 ```
 Group data by dayType and compute the mean  
 for each 5-minute interval for each dayType
-```{r}
+
+```r
 data_grpByDayType <- group_by(data_with_dayType, interval, dayType)
 mean_per_5MinInterval_per_dayType <- summarize(data_grpByDayType, mean_steps=round(mean(steps,na.rm = T)))
 ```
 Make a panel plot containing a time series plot of the 5-minute interval (x-axis)  
 and the average number of steps taken,  
 averaged across all weekday days or weekend days (y-axis).
-```{r}
+
+```r
 qplot(
     x = interval,
     y = mean_steps,
@@ -159,3 +217,5 @@ qplot(
     ylab = "Average number of steps"
   )
 ```
+
+![plot of chunk unnamed-chunk-19](figure/unnamed-chunk-19-1.png) 
